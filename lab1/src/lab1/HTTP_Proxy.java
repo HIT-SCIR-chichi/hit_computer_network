@@ -7,6 +7,8 @@ import java.net.ServerSocket;
 public class HTTP_Proxy {
 
   static File filter_file = new File("src/file/filter_file.txt");
+  static boolean user_filter = true;
+  static boolean web_filter = true;
   ServerSocket serverSocket;
   int server_port;
 
@@ -25,6 +27,12 @@ public class HTTP_Proxy {
     try {
       HTTP_Proxy http_Proxy = new HTTP_Proxy(10240, "src/file/filter_file.txt");
       System.out.println("代理服务器正在运行，监听端口" + http_Proxy.server_port);
+      if (user_filter) {
+        System.out.println("已开启用户过滤");
+      }
+      if (web_filter) {
+        System.out.println("已开启网页过滤");
+      }
       while (true) {
         new CommunicateThread(http_Proxy.serverSocket.accept()).start();
       }

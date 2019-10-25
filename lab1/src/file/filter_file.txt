@@ -1,2 +1,3 @@
-jwts.hit.edu.cn
-jwc.hit.edu.cn
+web_filter:jwts.hit.edu.cn
+web_filter:jwc.hit.edu.cn
+user_filter:127.0.0.1

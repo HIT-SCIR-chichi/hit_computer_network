@@ -2,13 +2,12 @@ package lab1;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 public class CommunicateThread extends Thread {
@@ -24,29 +23,47 @@ public class CommunicateThread extends Thread {
     this.client_socket = client_socket;
   }
 
+  public boolean filter() throws IOException {
+    if (!HTTP_Proxy.user_filter && !HTTP_Proxy.web_filter) {
+      return true;
+    }
+    BufferedReader bfr_filter =
+        new BufferedReader(new FileReader(HTTP_Proxy.filter_file));
+    String line_filter = "";
+    while ((line_filter = bfr_filter.readLine()) != null) {
+      if (HTTP_Proxy.user_filter
+          && line_filter.contains(client_socket.getInetAddress().getHostAddress())
+          && line_filter.contains("user_filter")) {
+        System.out.println(
+            "你不能访问该网站，因为你是被限制用户:" + client_socket.getInetAddress().getHostAddress());
+        bfr_filter.close();
+        return false;
+      } else if (HTTP_Proxy.web_filter && line_filter.contains(this.host)
+          && line_filter.contains("web_filter")) {
+        System.out.println("你不能访问该网站，因为目标网站被过滤:" + this.host);
+        bfr_filter.close();
+        return false;
+      }
+    }
+    bfr_filter.close();
+    return true;
+  }
+
   @Override public void run() {
     try {
       BufferedReader bfReader =
           new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
       String proxy_in_line = bfReader.readLine();
       this.parse_request(proxy_in_line);
-      // 网站过滤
-      BufferedReader bfr_filter =
-          new BufferedReader(new FileReader(HTTP_Proxy.filter_file));
-      String line_filter = "";
-      while ((line_filter = bfr_filter.readLine()) != null) {
-        if (line_filter.contains(this.host)) {
-          System.out.println("你不能访问该网站，因为目标网站被过滤:" + this.host);
-          bfr_filter.close();
-          return;
-        }
+
+      if (!this.filter()) {// 网站过滤，用户过滤
+        return;
       }
-      bfr_filter.close();
+
       server_socket = new Socket(this.host, this.port);
       PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
       while (proxy_in_line != null) {
         try {
-          System.out.println(proxy_in_line);
           client_socket.setSoTimeout(500);
           proxy_out.write(proxy_in_line + "\r\n");
           proxy_in_line = bfReader.readLine();
@@ -75,15 +92,13 @@ public class CommunicateThread extends Thread {
           }
         } catch (SocketTimeoutException e) {
           break;
-        } catch (SocketException e) {
-          System.out.println("\n" + e.getMessage() + "\n");
         }
       }
       System.out.println(this.host + ":客户端接收数据完毕");
       server_socket.close();
       client_socket.close();
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      System.out.println("\n" + e.getMessage() + "\n");
     }
   }
 
