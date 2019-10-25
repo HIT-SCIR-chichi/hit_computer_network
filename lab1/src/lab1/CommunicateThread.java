@@ -14,8 +14,9 @@ public class CommunicateThread extends Thread {
 
   Socket client_socket;// 与客户端通信的代理服务器的套接字
   Socket server_socket;// 与服务器端通信的代理服务器的套接字
+  String request_gram = "";// 接收来自客户端的请求报文
   int port = 80;
-  String type;
+  String method;
   String URL;
   String host;
 
@@ -23,7 +24,7 @@ public class CommunicateThread extends Thread {
     this.client_socket = client_socket;
   }
 
-  public boolean filter() throws IOException {
+  public boolean filter_and_phishing() throws IOException {
     if (!HTTP_Proxy.user_filter && !HTTP_Proxy.web_filter) {
       return true;
     }
@@ -43,6 +44,16 @@ public class CommunicateThread extends Thread {
         System.out.println("你不能访问该网站，因为目标网站被过滤:" + this.host);
         bfr_filter.close();
         return false;
+      } else if (HTTP_Proxy.phishing && line_filter.contains(this.host)
+          && line_filter.contains("phishing")) {
+        this.host = line_filter.split(" ")[1];
+        String old_URL = this.URL;
+        this.URL = "http://" + this.host + "/";
+        this.port = 80;
+        request_gram = request_gram.replace(old_URL, this.URL);
+        System.out.println("你不能访问目标网站，因为该网站已被引导向:" + this.host);
+        bfr_filter.close();
+        return true;
       }
     }
     bfr_filter.close();
@@ -55,27 +66,26 @@ public class CommunicateThread extends Thread {
           new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
       String proxy_in_line = bfReader.readLine();
       this.parse_request(proxy_in_line);
-
-      if (!this.filter()) {// 网站过滤，用户过滤
-        return;
-      }
-
-      server_socket = new Socket(this.host, this.port);
-      PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
       while (proxy_in_line != null) {
         try {
+          request_gram += proxy_in_line + "\r\n";
           client_socket.setSoTimeout(500);
-          proxy_out.write(proxy_in_line + "\r\n");
           proxy_in_line = bfReader.readLine();
           client_socket.setSoTimeout(0);
         } catch (SocketTimeoutException e) {
           break;
         }
       }
-      proxy_out.write("\r\n");
+      if (!this.filter_and_phishing()) {// 网站过滤，用户过滤，钓鱼
+        return;
+      }
+      server_socket = new Socket(this.host, this.port);
+      PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
+      System.out.print(request_gram);
+      proxy_out.write(request_gram);
       proxy_out.flush();
-      System.out
-          .println("目的主机:" + this.host + "\n目的端口号:" + this.port + "\n服务类型:" + this.type);
+      System.out.println(
+          "目的主机:" + this.host + "\n目的端口号:" + this.port + "\n服务类型:" + this.method);
       System.out.println(this.host + ":向服务器转发数据结束");
       // 上面已经转发给服务器端，下面开始从服务器取数据并将其转发给客户端
       InputStream proxy_server_in = server_socket.getInputStream();
@@ -106,7 +116,7 @@ public class CommunicateThread extends Thread {
    * in order to:获取目的主机URL以及请求类型；初始化host和port(如果可以)
    */
   public void parse_request(String head_line) {
-    this.type = head_line.split("[ ]")[0];
+    this.method = head_line.split("[ ]")[0];
     this.URL = head_line.split("[ ]")[1];
     int index = -1;
     this.host = this.URL;
