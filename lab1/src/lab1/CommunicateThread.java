@@ -9,12 +9,15 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CommunicateThread extends Thread {
 
   Socket client_socket;// 与客户端通信的代理服务器的套接字
   Socket server_socket;// 与服务器端通信的代理服务器的套接字
   String request_gram = "";// 接收来自客户端的请求报文
+  String respose_gram = "";// 接受来自服务器的响应报文
   int port = 80;
   String method;
   String URL;
@@ -24,6 +27,9 @@ public class CommunicateThread extends Thread {
     this.client_socket = client_socket;
   }
 
+  /**
+   * in order to:用于网站过滤、用户过滤、网站引导
+   */
   public boolean filter_and_phishing() throws IOException {
     if (!HTTP_Proxy.user_filter && !HTTP_Proxy.web_filter) {
       return true;
@@ -64,13 +70,13 @@ public class CommunicateThread extends Thread {
     try {
       BufferedReader bfReader =
           new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
-      String proxy_in_line = bfReader.readLine();
-      this.parse_request(proxy_in_line);
-      while (proxy_in_line != null) {
+      String proxy_line = bfReader.readLine();
+      this.parse_request(proxy_line);
+      while (proxy_line != null) {
         try {
-          request_gram += proxy_in_line + "\r\n";
+          request_gram += proxy_line + "\r\n";
           client_socket.setSoTimeout(500);
-          proxy_in_line = bfReader.readLine();
+          proxy_line = bfReader.readLine();
           client_socket.setSoTimeout(0);
         } catch (SocketTimeoutException e) {
           break;
@@ -81,7 +87,6 @@ public class CommunicateThread extends Thread {
       }
       server_socket = new Socket(this.host, this.port);
       PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
-      System.out.print(request_gram);
       proxy_out.write(request_gram);
       proxy_out.flush();
       System.out.println(
@@ -90,6 +95,7 @@ public class CommunicateThread extends Thread {
       // 上面已经转发给服务器端，下面开始从服务器取数据并将其转发给客户端
       InputStream proxy_server_in = server_socket.getInputStream();
       OutputStream proxy_client_out = client_socket.getOutputStream();
+      List<Byte> out_bytes = new ArrayList<>();
       while (true) {
         try {
           server_socket.setSoTimeout(500);
@@ -97,6 +103,7 @@ public class CommunicateThread extends Thread {
           if (b == -1) {
             break;
           } else {
+            out_bytes.add((byte) (b));
             proxy_client_out.write(b);
             server_socket.setSoTimeout(0);
           }
