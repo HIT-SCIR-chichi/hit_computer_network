@@ -44,7 +44,7 @@ public class CommunicateThread extends Thread {
         System.out.println("你不能访问该网站，因为目标网站被过滤:" + this.host);
         bfr_filter.close();
         return false;
-      } else if (HTTP_Proxy.phishing && line_filter.contains(this.host)
+      } else if (HTTP_Proxy.phishing && line_filter.contains(this.host + " ")
           && line_filter.contains("phishing")) {
         this.host = line_filter.split(" ")[1];
         String old_URL = this.URL;
