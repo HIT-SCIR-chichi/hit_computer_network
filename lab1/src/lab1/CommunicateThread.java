@@ -1,6 +1,9 @@
 package lab1;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +21,7 @@ public class CommunicateThread extends Thread {
   Socket server_socket;// 与服务器端通信的代理服务器的套接字
   String request_gram = "";// 接收来自客户端的请求报文
   String respose_gram = "";// 接受来自服务器的响应报文
+  byte[] respose_byte;
   int port = 80;
   String method;
   String URL;
@@ -66,33 +70,20 @@ public class CommunicateThread extends Thread {
     return true;
   }
 
-  @Override public void run() {
-    try {
-      BufferedReader bfReader =
-          new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
-      String proxy_line = bfReader.readLine();
-      this.parse_request(proxy_line);
-      while (proxy_line != null) {
-        try {
-          request_gram += proxy_line + "\r\n";
-          client_socket.setSoTimeout(500);
-          proxy_line = bfReader.readLine();
-          client_socket.setSoTimeout(0);
-        } catch (SocketTimeoutException e) {
-          break;
-        }
-      }
-      if (!this.filter_and_phishing()) {// 网站过滤，用户过滤，钓鱼
-        return;
-      }
-      server_socket = new Socket(this.host, this.port);
+  public boolean in_cache_new() throws IOException {
+    if (!new File("src/file/" + this.host).exists()) {
+      new File("src/file/" + this.host).mkdir();
+    }
+    File cache_file =
+        new File("src/file/" + this.host + "/" + this.URL.hashCode() + ".dat");
+    if (!cache_file.exists()) {
+      System.out.println("缓存文件不存在，需要向服务器提交请求");
+      cache_file.createNewFile();
+      // 向服务器转发原请求
       PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
       proxy_out.write(request_gram);
       proxy_out.flush();
-      System.out.println(
-          "目的主机:" + this.host + "\n目的端口号:" + this.port + "\n服务类型:" + this.method);
-      System.out.println(this.host + ":向服务器转发数据结束");
-      // 上面已经转发给服务器端，下面开始从服务器取数据并将其转发给客户端
+      System.out.println(this.request_gram);
       InputStream proxy_server_in = server_socket.getInputStream();
       OutputStream proxy_client_out = client_socket.getOutputStream();
       List<Byte> out_bytes = new ArrayList<>();
@@ -111,7 +102,103 @@ public class CommunicateThread extends Thread {
           break;
         }
       }
-      System.out.println(this.host + ":客户端接收数据完毕");
+      this.respose_byte = new byte[out_bytes.size()];
+      int count = 0;
+      for (Byte byte1 : out_bytes) {
+        this.respose_byte[count++] = byte1;
+      }
+      FileOutputStream cache_file_out = new FileOutputStream(cache_file);
+      cache_file_out.write(this.respose_byte);
+      cache_file_out.close();
+    } else {// 文件已经存在，则需要判断：若存在DATA且已更新，则返回，否则直接将缓存作为响应
+      BufferedReader cache_reader =
+          new BufferedReader(new InputStreamReader(new FileInputStream(cache_file)));
+      String line_cache = "";
+      while ((line_cache = cache_reader.readLine()) != null) {
+        this.respose_gram += line_cache + "\r\n";
+        if (line_cache.startsWith("Date:")) {
+          // this.request_gram = "If-Modified-Since: " + line_cache.substring(6) + "\r\n"
+          // + this.request_gram;
+        }
+      }
+      // 向服务器发送新的修改请求报文
+      PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
+      proxy_out.write(request_gram);
+      System.out.print("发往服务器的新的构造报文\n" + this.request_gram + "向服务器发送报文结束\n");
+      proxy_out.flush();
+      cache_reader.close();
+      // 接收服务器的请求
+      InputStream proxy_server_in = server_socket.getInputStream();
+      List<Byte> out_bytes = new ArrayList<>();
+      while (true) {
+        try {
+          server_socket.setSoTimeout(500);
+          int b = proxy_server_in.read();
+          if (b == -1) {
+            break;
+          } else {
+            out_bytes.add((byte) (b));
+            server_socket.setSoTimeout(0);
+          }
+        } catch (SocketTimeoutException e) {
+          break;
+        }
+      }
+      this.respose_byte = new byte[out_bytes.size()];
+      int count = 0;
+      for (Byte byte1 : out_bytes) {
+        this.respose_byte[count++] = byte1;
+      }
+      this.respose_gram = new String(respose_byte, 0, count);
+      System.out.println("得到响应报文\n" + this.respose_gram + "响应报文结束");
+      if (this.respose_gram.split("\r\n")[0].contains("304")) {
+        System.out.println("服务器报文未更新，可以直接请求缓存");
+        // 直接将缓存报文发送给客户端
+        FileInputStream cache_file_read = new FileInputStream(cache_file);
+        OutputStream proxy_client_out = client_socket.getOutputStream();
+        int b;
+        while ((b = cache_file_read.read()) != -1) {
+          proxy_client_out.write(b);
+        }
+        cache_file_read.close();
+        return true;
+      } else if (this.respose_gram.split("\r\n")[0].contains("200")) {
+        System.out.println("服务器报文已更新，需要转发服务器端发送的响应报文");
+        // 将从服务器读取到的转发给客户端，并更新缓存
+        OutputStream proxy_client_out = client_socket.getOutputStream();
+        proxy_client_out.write(this.respose_byte);
+        return false;
+      } else {
+        System.out.println("响应报文头部行状态码无法解析\n");
+        return false;
+      }
+    }
+    return false;
+  }
+
+  @Override public void run() {
+    try {
+      BufferedReader bfReader =
+          new BufferedReader(new InputStreamReader(client_socket.getInputStream()));
+      String proxy_line = bfReader.readLine();
+      this.parse_request(proxy_line);
+      while (proxy_line != null) {
+        try {
+          if (!proxy_line.contains("Cache-Control")) {
+            request_gram += proxy_line + "\r\n";
+          }
+          client_socket.setSoTimeout(500);
+          proxy_line = bfReader.readLine();
+          client_socket.setSoTimeout(0);
+        } catch (SocketTimeoutException e) {
+          break;
+        }
+      }
+      if (!this.filter_and_phishing()) {// 网站过滤，用户过滤，钓鱼
+        return;
+      }
+      server_socket = new Socket(this.host, this.port);
+      this.in_cache_new();
       server_socket.close();
       client_socket.close();
     } catch (IOException e) {

@@ -27,6 +27,7 @@ public class HTTP_Proxy {
       if (web_filter) {
         System.out.println("已开启网页过滤");
       }
+      System.out.println("************************************************************************");
       while (true) {
         new CommunicateThread(http_Proxy.serverSocket.accept()).start();
       }
