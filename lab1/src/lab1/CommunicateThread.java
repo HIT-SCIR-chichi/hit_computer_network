@@ -21,6 +21,7 @@ public class CommunicateThread extends Thread {
   Socket server_socket;// 与服务器端通信的代理服务器的套接字
   String request_gram = "";// 接收来自客户端的请求报文
   String respose_gram = "";// 接受来自服务器的响应报文
+  int socket_time_out = 1000;// socket的超时时间，设置为1000ms
   byte[] respose_byte;
   int port = 80;
   String method;
@@ -87,7 +88,7 @@ public class CommunicateThread extends Thread {
       List<Byte> out_bytes = new ArrayList<>();
       while (true) {
         try {
-          server_socket.setSoTimeout(500);
+          server_socket.setSoTimeout(this.socket_time_out);
           int b = proxy_server_in.read();
           if (b == -1) {
             break;
@@ -129,7 +130,7 @@ public class CommunicateThread extends Thread {
       List<Byte> out_bytes = new ArrayList<>();
       while (true) {
         try {
-          server_socket.setSoTimeout(500);
+          server_socket.setSoTimeout(this.socket_time_out);
           int b = proxy_server_in.read();
           if (b == -1) {
             break;
