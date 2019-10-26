@@ -70,20 +70,18 @@ public class CommunicateThread extends Thread {
     return true;
   }
 
-  public boolean in_cache_new() throws IOException {
+  public void in_cache_new() throws IOException {
     if (!new File("src/file/" + this.host).exists()) {
       new File("src/file/" + this.host).mkdir();
     }
     File cache_file =
         new File("src/file/" + this.host + "/" + this.URL.hashCode() + ".dat");
     if (!cache_file.exists()) {
-      System.out.println("缓存文件不存在，需要向服务器提交请求");
       cache_file.createNewFile();
       // 向服务器转发原请求
       PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
       proxy_out.write(request_gram);
       proxy_out.flush();
-      System.out.println(this.request_gram);
       InputStream proxy_server_in = server_socket.getInputStream();
       OutputStream proxy_client_out = client_socket.getOutputStream();
       List<Byte> out_bytes = new ArrayList<>();
@@ -117,14 +115,13 @@ public class CommunicateThread extends Thread {
       while ((line_cache = cache_reader.readLine()) != null) {
         this.respose_gram += line_cache + "\r\n";
         if (line_cache.startsWith("Date:")) {
-          // this.request_gram = "If-Modified-Since: " + line_cache.substring(6) + "\r\n"
-          // + this.request_gram;
+          this.request_gram = this.request_gram.replace("\r\n\r\n",
+              "\r\n" + "If-Modified-Since: " + line_cache.substring(6) + "\r\n\r\n");
         }
       }
       // 向服务器发送新的修改请求报文
       PrintWriter proxy_out = new PrintWriter(server_socket.getOutputStream());
       proxy_out.write(request_gram);
-      System.out.print("发往服务器的新的构造报文\n" + this.request_gram + "向服务器发送报文结束\n");
       proxy_out.flush();
       cache_reader.close();
       // 接收服务器的请求
@@ -150,9 +147,9 @@ public class CommunicateThread extends Thread {
         this.respose_byte[count++] = byte1;
       }
       this.respose_gram = new String(respose_byte, 0, count);
-      System.out.println("得到响应报文\n" + this.respose_gram + "响应报文结束");
       if (this.respose_gram.split("\r\n")[0].contains("304")) {
-        System.out.println("服务器报文未更新，可以直接请求缓存");
+        // System.out.println("服务器报文未更新，可以直接请求缓存\n该条请求报文在缓存中\n" + this.request_gram);
+        System.out.println("缓存命中数: " + ++HTTP_Proxy.cache_hit + "\t命中: " + this.URL);
         // 直接将缓存报文发送给客户端
         FileInputStream cache_file_read = new FileInputStream(cache_file);
         OutputStream proxy_client_out = client_socket.getOutputStream();
@@ -161,19 +158,12 @@ public class CommunicateThread extends Thread {
           proxy_client_out.write(b);
         }
         cache_file_read.close();
-        return true;
       } else if (this.respose_gram.split("\r\n")[0].contains("200")) {
-        System.out.println("服务器报文已更新，需要转发服务器端发送的响应报文");
         // 将从服务器读取到的转发给客户端，并更新缓存
         OutputStream proxy_client_out = client_socket.getOutputStream();
         proxy_client_out.write(this.respose_byte);
-        return false;
-      } else {
-        System.out.println("响应报文头部行状态码无法解析\n");
-        return false;
       }
     }
-    return false;
   }
 
   @Override public void run() {

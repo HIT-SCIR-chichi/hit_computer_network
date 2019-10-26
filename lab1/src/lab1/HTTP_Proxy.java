@@ -2,6 +2,7 @@ package lab1;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.ServerSocket;
 
 public class HTTP_Proxy {
@@ -10,6 +11,7 @@ public class HTTP_Proxy {
   static boolean user_filter = true;
   static boolean web_filter = true;
   static boolean phishing = true;
+  static int cache_hit = 0;
   ServerSocket serverSocket;
   int server_port = 10240;
 
@@ -20,19 +22,23 @@ public class HTTP_Proxy {
   public static void main(String[] args) throws IOException {
     try {
       HTTP_Proxy http_Proxy = new HTTP_Proxy();
-      System.out.println("代理服务器正在运行，监听端口" + http_Proxy.server_port);
+      System.out.println("代理服务器:\t运行\n监听端口:\t" + http_Proxy.server_port);
       if (user_filter) {
-        System.out.println("已开启用户过滤");
+        System.out.println("用户过滤:\t打开");
       }
       if (web_filter) {
-        System.out.println("已开启网页过滤");
+        System.out.println("网页过滤:\t打开");
       }
-      System.out.println("************************************************************************");
+      System.out.println("网页缓存:\t打开");
+      System.out.println(
+          "************************************************************************");
       while (true) {
         new CommunicateThread(http_Proxy.serverSocket.accept()).start();
       }
+    } catch (BindException band_exception) {
+      System.out.println(band_exception.getMessage());
     } catch (IOException e) {
-      e.printStackTrace();
+      System.out.println(e.getMessage());
     }
   }
 }
