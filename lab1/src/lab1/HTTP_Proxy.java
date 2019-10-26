@@ -2,7 +2,6 @@ package lab1;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.BindException;
 import java.net.ServerSocket;
 
 public class HTTP_Proxy {
@@ -30,13 +29,10 @@ public class HTTP_Proxy {
         System.out.println("网页过滤:\t打开");
       }
       System.out.println("网页缓存:\t打开");
-      System.out.println(
-          "************************************************************************");
+      System.out.println("**********************************************************");
       while (true) {
         new CommunicateThread(http_Proxy.serverSocket.accept()).start();
       }
-    } catch (BindException band_exception) {
-      System.out.println(band_exception.getMessage());
     } catch (IOException e) {
       System.out.println(e.getMessage());
     }
