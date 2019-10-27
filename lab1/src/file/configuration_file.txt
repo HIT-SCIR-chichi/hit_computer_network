@@ -1,0 +1,6 @@
+web_filter=true
+user_filter=true
+phishing=true
+web_filter:jwc.hit.edu.cn
+user_filter:127.0.0.0
+phishing:jwes.hit.edu.cn eelab.hit.edu.cn

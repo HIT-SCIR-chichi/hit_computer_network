@@ -1,3 +1,0 @@
-web_filter:jwc.hit.edu.cn
-user_filter:127.0.0.0
-phishing:jwts.hit.edu.cn today.hit.edu.cn
