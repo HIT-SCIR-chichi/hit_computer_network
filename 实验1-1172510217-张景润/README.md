@@ -1,6 +1,6 @@
 # 实验1：代理服务器的设计与实现
 ## 程序运行时可能出现问题说明
-- 由于该说明文件同时用于我的私人GitHub仓库的README文件1，所以使用Markdown语言编写(配合在线Markdown编辑器食用本文件更佳)
+- 由于该说明文件同时用于我的私人GitHub仓库的README文件，所以使用Markdown语言编写(配合在线Markdown编辑器食用本文件更佳)
 - 可能出现网页加载不出来的情况
     - 可能是超时时间间隔设置过短，可在配置文件里增大超时时间
     - 可能是缓存文件的问题，可删除缓存文件，并重新访问(目录：src/file/host/URL.hashCode().txt)
@@ -14,6 +14,7 @@
 #### file文件夹
 - configuration.txt
     - 功能：配置文件，用于配置文本代码的附加功能  
+    - socket_time_out=1000                        #用于配置套接字通信超时时间为1000ms，可修改
     - web_filter=true                             #用于配置网页过滤功能打开，若要关闭可改为false  
     - user_filter=true                            #用于配置用户过滤功能打开，若要关闭可改为false  
     - phishing=true                               #用于配置钓鱼功能打开，若要关闭可改为false  
