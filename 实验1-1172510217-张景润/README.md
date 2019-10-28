@@ -21,7 +21,7 @@
     一个线程类  
     用于处理一个socket连接  
 ###### HTTP_Proxy.java
-####### 可运行主类，用于启动代理服务器
-####### 同时该类对外提供了API接口，可以通过静态顺序调用两个方法启动代理服务器
-    HTTP_Proxy.configurate_proxy(null);//用于配置附加功能，参数为null则读取默认的配置文件  
-    HTTP_Proxy.start_proxy();//用于启动代理服务器  
+- 可运行主类，用于启动代理服务器
+- 同时该类对外提供了API接口，可以通过静态顺序调用两个方法启动代理服务器
+    - HTTP_Proxy.configurate_proxy(null);//用于配置附加功能，参数为null则读取默认的配置文件  
+    - HTTP_Proxy.start_proxy();//用于启动代理服务器  
