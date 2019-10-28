@@ -3,7 +3,7 @@
     运行软件：eclipse，2018-12  
     项目信息：.classpath和.project  
 ## 文件说明
-### src文件：代码文件夹
+### src文件
 #### file文件夹
 - configuration.txt
     - 功能：配置文件，用于配置文本代码的附加功能  
@@ -16,7 +16,7 @@
 - 其余.txt文件
     - 生成：实验时生成的代理服务器缓存文件  
     - 文件组织方式：通常一个host对应的所有文本文件都在与host同名的文件夹下  
-#### lab1文件夹：代码文件
+#### lab1文件夹
 - CommunicateThread.java
     - 一个线程类  
     - 用于处理一个socket连接  
