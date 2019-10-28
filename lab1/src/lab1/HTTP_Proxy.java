@@ -30,6 +30,9 @@ public class HTTP_Proxy {
       if (web_filter) {
         System.out.println("网页过滤:\t开启");
       }
+      if (phishing) {
+        System.out.println("网站引导:\t开启");
+      }
       System.out.println("服务器缓存:\t开启");
       System.out.println("***************************************************");
       while (true) {// 不断监听来自客户端的请求

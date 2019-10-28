@@ -51,27 +51,25 @@ public class CommunicateThread extends Thread {
         new BufferedReader(new FileReader(HTTP_Proxy.configuraion_file));
     String line_filter = "";
     while ((line_filter = bfr_filter.readLine()) != null) {
-      // 若开启了用户过滤且客户端用户为被限制用户，则返回false
-      if (HTTP_Proxy.user_filter
+      if (HTTP_Proxy.user_filter// 若开启了用户过滤且客户端用户为被限制用户，则返回false
           && line_filter.contains(client_socket.getInetAddress().getHostAddress())
           && line_filter.contains("user_filter")) {
-        System.out.println(
-            "你不能访问该网站，因为你是被限制用户:" + client_socket.getInetAddress().getHostAddress());
+        System.out.println("用户受限:\t" + client_socket.getInetAddress().getHostAddress());
         bfr_filter.close();
         return false;
       } else if (HTTP_Proxy.web_filter && line_filter.contains(this.host)
           && line_filter.contains("web_filter")) {// 若开启了网站过滤且目的主机为被过滤的主机，则返回
-        System.out.println("你不能访问该网站，因为目标网站被过滤:" + this.host);
+        System.out.println("网站受限:\t" + this.host);
         bfr_filter.close();
         return false;
       } else if (HTTP_Proxy.phishing && line_filter.contains(this.host + " ")
           && line_filter.contains("phishing")) {// 若开启了网站引导且目的主机为被引导的主机则将头部行替换
+        String old_host = this.host;
         this.host = line_filter.split(" ")[1];
-        String old_URL = this.URL;
-        this.URL = "http://" + this.host + "/";
         this.port = 80;
-        request_gram = request_gram.replace(old_URL, this.URL);// 将请求报文中的头部URL替换为引导网站的URL
-        System.out.println("你不能访问目标网站，因为该网站已被引导向:" + this.host);
+        this.URL = this.URL.replace(old_host, this.host);
+        request_gram = request_gram.replace(old_host, this.host);// 将请求报文中的头部URL替换为引导网站的URL
+        System.out.println("网站引导:\t" + this.host);
         bfr_filter.close();
         return true;
       }
@@ -83,7 +81,7 @@ public class CommunicateThread extends Thread {
   /**
    * to:判断是否有缓存文件.
    */
-  public void in_cache_new() throws IOException {
+  public void cache() throws IOException {
     if (!new File("src/file/" + this.host).exists()) {
       new File("src/file/" + this.host).mkdir();
     }
@@ -93,6 +91,7 @@ public class CommunicateThread extends Thread {
     InputStream proxy_server_in = server_socket.getInputStream();// 服务器向客户端返回响应的流
     OutputStream proxy_client_out = client_socket.getOutputStream();// 向客户端发送的流
     if (!cache_file.exists()) {// 若对应的缓存文件不存在，则创建该文件用于记录新返回的响应报文
+      System.out.println("缓存文件不存在，需转发请求，文件名:" + this.URL.hashCode());
       FileOutputStream cache_file_out = new FileOutputStream(cache_file);// 写缓存文件的流
       proxy_out.write(request_gram); // 向服务器转发原请求
       proxy_out.flush();
@@ -111,6 +110,7 @@ public class CommunicateThread extends Thread {
           break;
         }
       }
+      System.out.println("响应报文来源:服务器端\t新建缓存:是\t文件名:" + this.URL.hashCode() + ".txt");
       cache_file_out.close();
     } else {// 文件已经存在，则需要判断：若存在DATA且已更新，则返回，否则直接将缓存作为响应
       DateFormat df = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH);
@@ -150,11 +150,14 @@ public class CommunicateThread extends Thread {
           proxy_client_out.write(b);// 写入客户端的流
         }
         cache_file_read.close();
+        System.out.println("响应报文来源:缓存文件\t更新缓存:否\t文件名:" + this.URL.hashCode() + ".txt");
       } else if (this.respose_gram.split("\r\n")[0].contains("200")) {// 响应报文头含200，更新缓存
+        System.out.println("缓存文件存在，但需更新，文件名:" + this.URL.hashCode());
         FileOutputStream cache_file_out = new FileOutputStream(cache_file);// 写缓存文件的流
         proxy_client_out.write(this.respose_byte);// 将从服务器读取到的转发给客户端
         cache_file_out.write(this.respose_byte);// 更新本地缓存
         cache_file_out.close();
+        System.out.println("响应报文来源:服务器端\t更新缓存:是\t文件名:" + this.URL.hashCode() + ".txt");
       }
     }
   }
@@ -174,7 +177,7 @@ public class CommunicateThread extends Thread {
       while (proxy_line != null) {
         try {
           request_gram += proxy_line + "\r\n";// 获取请求报文的信息
-          client_socket.setSoTimeout(500);// 设置超时时间，用于跳出流的阻塞状态
+          client_socket.setSoTimeout(this.socket_time_out);// 设置超时时间，用于跳出流的阻塞状态
           proxy_line = bfReader.readLine();
           client_socket.setSoTimeout(0);
         } catch (SocketTimeoutException e) {
@@ -185,7 +188,7 @@ public class CommunicateThread extends Thread {
         return;
       }
       server_socket = new Socket(this.host, this.port);// 建立与服务器通信的套接字
-      this.in_cache_new();// 判断请求报文是否可以由缓存文件给出，并进行相应的操作
+      this.cache();// 判断请求报文是否可以由缓存文件给出，并进行相应的操作
       server_socket.close();
       client_socket.close();
     } catch (IOException e) {
