@@ -25,7 +25,6 @@ public class CommunicateThread extends Thread {
   Socket server_socket;// 与服务器端通信的代理服务器的套接字
   String request_gram = "";// 接收来自客户端的请求报文
   String respose_gram = "";// 接受来自服务器的响应报文
-  int socket_time_out = 1000;// socket的超时时间，设置为1000ms
   byte[] respose_byte;// 用于储存接受的响应报文字节流信息
   int port = 80;// 默认与服务器的连接端口为80
   String URL;// 头部行中的URL
@@ -97,7 +96,7 @@ public class CommunicateThread extends Thread {
       proxy_out.flush();
       while (true) {
         try {
-          server_socket.setSoTimeout(this.socket_time_out);// 设置超时时间用于跳出阻塞状态
+          server_socket.setSoTimeout(HTTP_Proxy.socket_time_out);// 设置超时时间用于跳出阻塞状态
           int b = proxy_server_in.read();// 字节流读取响应报文
           if (b == -1) {
             break;
@@ -123,7 +122,7 @@ public class CommunicateThread extends Thread {
       List<Byte> out_bytes = new ArrayList<>();
       while (true) {
         try {
-          server_socket.setSoTimeout(this.socket_time_out);// 设置超时时间用于跳出流阻塞
+          server_socket.setSoTimeout(HTTP_Proxy.socket_time_out);// 设置超时时间用于跳出流阻塞
           int b = proxy_server_in.read();// 读取响应报文
           if (b == -1) {
             break;
@@ -177,7 +176,7 @@ public class CommunicateThread extends Thread {
       while (proxy_line != null) {
         try {
           request_gram += proxy_line + "\r\n";// 获取请求报文的信息
-          client_socket.setSoTimeout(this.socket_time_out);// 设置超时时间，用于跳出流的阻塞状态
+          client_socket.setSoTimeout(HTTP_Proxy.socket_time_out);// 设置超时时间，用于跳出流的阻塞状态
           proxy_line = bfReader.readLine();
           client_socket.setSoTimeout(0);
         } catch (SocketTimeoutException e) {

@@ -1,3 +1,4 @@
+socket_time_out=1000
 web_filter=true
 user_filter=true
 phishing=true

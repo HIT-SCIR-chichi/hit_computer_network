@@ -10,6 +10,7 @@ public class HTTP_Proxy {
 
   // 默认的完成过滤网页、过滤用户和网站引导的配置文件
   static File configuraion_file = new File("src/file/configuration_file.txt");
+  static int socket_time_out = 1000;// socket的超时时间，设置为1000ms
   static boolean user_filter = true;// 是否开启用户过滤
   static boolean web_filter = true;// 是否开启网页过滤
   static boolean phishing = true;// 是否开启网站引导
@@ -44,7 +45,7 @@ public class HTTP_Proxy {
   }
 
   /**
-   * to:读取配置文件，用于配置网页过滤、网站引导、用户过滤开否开启，默认缓存开启.
+   * to:读取配置文件，用于配置套接字超时时间、网页过滤、网站引导、用户过滤开否开启，默认缓存开启.
    * 
    * @param file_path 配置文件路径名
    */
@@ -57,7 +58,9 @@ public class HTTP_Proxy {
           new BufferedReader(new FileReader(HTTP_Proxy.configuraion_file));
       String configure_line = "";
       while ((configure_line = configure_reader.readLine()) != null) {
-        if (configure_line.contains("web_filter=")) {
+        if (configure_line.contains("socket_time_out=")) {
+          HTTP_Proxy.socket_time_out = Integer.parseInt(configure_line.substring(16));
+        } else if (configure_line.contains("web_filter=")) {
           HTTP_Proxy.web_filter = Boolean.valueOf(configure_line.substring(11));
         } else if (configure_line.contains("user_filter=")) {
           HTTP_Proxy.user_filter = Boolean.valueOf(configure_line.substring(12));
