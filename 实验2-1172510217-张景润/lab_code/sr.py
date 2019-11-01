@@ -2,38 +2,12 @@ import random
 import select
 import socket
 
+from lab_code.main import Host
+
 
 class SR:
-    # 规定发送数据格式：[seq_num data]
-    # 规定发送确认格式：[exp_num-1 0]
-    # 规定发送结束格式：[0 0]
-    host_address_1 = ('127.0.0.1', 12340)
-    host_address_2 = ('127.0.0.1', 12341)
 
-    # 用于配置主机地址
-    @staticmethod
-    def config_sr(config_path='../file/config_file.txt'):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            line = f.readline()
-            while len(line) > 0:
-                if line.startswith('host_address_1'):
-                    SR.host_address_1 = (
-                        line[line.index('=') + 1: line.index(' ')],
-                        int(line[line.index(' ') + 1:len(line) - 1]))
-                elif line.startswith('host_address_2'):
-                    SR.host_address_2 = (
-                        line[line.index('=') + 1: line.index(' ')],
-                        int(line[line.index(' ') + 1:len(line) - 1]))
-                line = f.readline()
-
-    @staticmethod
-    def make_pkt(pkt_num, data):
-        return (str(pkt_num) + ' ' + str(data)).encode(encoding='utf-8')
-
-
-class Host:
-
-    def __init__(self, local_address=SR.host_address_1, remote_address=SR.host_address_2):
+    def __init__(self, local_address=Host.host_address_1, remote_address=Host.host_address_2):
         self.send_window_size = 10  # 窗口尺寸
         self.send_base = 0  # 最小的被发送的分组序号
         self.next_seq = 0  # 当前未被利用的序号
@@ -68,7 +42,7 @@ class Host:
             return
         if self.next_seq < self.send_base + self.send_window_size:  # 窗口中仍有可用空间
             if random.random() > self.pkt_loss:
-                self.socket.sendto(SR.make_pkt(self.next_seq, self.data[self.next_seq]),
+                self.socket.sendto(Host.make_pkt(self.next_seq, self.data[self.next_seq]),
                                    self.remote_address)
             self.time_counts[self.next_seq] = 0
             self.ack_seqs[self.next_seq] = False
@@ -83,7 +57,7 @@ class Host:
         self.time_counts[time_out_seq] = 0
         self.ack_seqs[time_out_seq] = False
         if random.random() > self.pkt_loss:
-            self.socket.sendto(SR.make_pkt(time_out_seq, self.data[time_out_seq]),
+            self.socket.sendto(Host.make_pkt(time_out_seq, self.data[time_out_seq]),
                                self.remote_address)
 
     # 从文件中读取数据，并存储到data属性里
@@ -123,7 +97,7 @@ class Host:
                         if self.time_counts[seq] > self.time_out:
                             self.handle_time_out(seq)
             if self.send_base == len(self.data):
-                self.socket.sendto(SR.make_pkt(0, 0), self.remote_address)
+                self.socket.sendto(Host.make_pkt(0, 0), self.remote_address)
                 print('服务器:数据传输结束')
                 break
 
@@ -151,7 +125,7 @@ class Host:
                         if int(rcv_seq) == self.rcv_base:  # 按序数据的到来:滑动窗口并交付数据(清除对应的缓冲区)
                             self.slide_rcv_window()
                     if random.random() >= self.ack_loss:
-                        self.socket.sendto(SR.make_pkt(int(rcv_seq), 0), self.remote_address)
+                        self.socket.sendto(Host.make_pkt(int(rcv_seq), 0), self.remote_address)
                     print('客户端:发送ACK' + rcv_seq)
 
     # 滑动接收窗口:滑动rcv_base，向上层交付数据，并清除已交付数据的缓存

@@ -2,39 +2,12 @@ import random
 import select
 import socket
 
+from lab_code.main import Host
+
 
 class GBN:
-    # 规定发送数据格式：[seq_num data]
-    # 规定发送确认格式：[exp_num-1 0]
-    # 规定发送结束格式：[0 0]
-    host_address_1 = ('127.0.0.1', 12340)
-    host_address_2 = ('127.0.0.1', 12341)
 
-    # 用于配置主机地址
-    @staticmethod
-    def config_gbn(config_path='../file/config_file.txt'):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            line = f.readline()
-            while len(line) > 0:
-                if line.startswith('host_address_1'):
-                    GBN.host_address_1 = (
-                        line[line.index('=') + 1: line.index(' ')],
-                        int(line[line.index(' ') + 1:len(line) - 1]))
-                    print(GBN.host_address_1)
-                elif line.startswith('host_address_2'):
-                    GBN.host_address_2 = (
-                        line[line.index('=') + 1: line.index(' ')],
-                        int(line[line.index(' ') + 1:len(line) - 1]))
-                line = f.readline()
-
-    @staticmethod
-    def make_pkt(pkt_num, data):
-        return (str(pkt_num) + ' ' + str(data)).encode(encoding='utf-8')
-
-
-class Host:
-
-    def __init__(self, local_address=GBN.host_address_1, remote_address=GBN.host_address_2):
+    def __init__(self, local_address=Host.host_address_1, remote_address=Host.host_address_2):
         self.window_size = 10  # 窗口尺寸
         self.send_base = 0  # 最小的被发送的分组序号
         self.next_seq = 0  # 当前未被利用的序号
@@ -64,7 +37,7 @@ class Host:
             return
         if self.next_seq < self.send_base + self.window_size:  # 窗口中仍有可用空间
             if random.random() > self.pkt_loss:
-                self.socket.sendto(GBN.make_pkt(self.next_seq, self.data[self.next_seq]),
+                self.socket.sendto(Host.make_pkt(self.next_seq, self.data[self.next_seq]),
                                    self.remote_address)
             if self.send_base == self.next_seq:
                 self.time_count = 0
@@ -81,7 +54,7 @@ class Host:
                        self.next_seq if self.next_seq > self.send_base
                        else self.next_seq + self.window_size):
             if random.random() > self.pkt_loss:
-                self.socket.sendto(GBN.make_pkt(i, self.data[i]), self.remote_address)
+                self.socket.sendto(Host.make_pkt(i, self.data[i]), self.remote_address)
             print('数据已重发:' + str(i))
 
     def get_data_from_file(self):
@@ -105,7 +78,7 @@ class Host:
                 if self.time_count > self.time_out:
                     self.handle_time_out()
             if self.send_base == len(self.data):
-                self.socket.sendto(GBN.make_pkt(0, 0), self.remote_address)
+                self.socket.sendto(Host.make_pkt(0, 0), self.remote_address)
                 print('服务器数据传输结束')
                 break
 
@@ -132,4 +105,4 @@ class Host:
                 else:
                     print('客户端：收到数据非期望数据，期望:' + str(self.exp_seq) + '实际:' + str(rcv_seq))
                 if random.random() >= self.ack_loss:
-                    self.socket.sendto(GBN.make_pkt(self.exp_seq - 1, 0), self.remote_address)
+                    self.socket.sendto(Host.make_pkt(self.exp_seq - 1, 0), self.remote_address)
