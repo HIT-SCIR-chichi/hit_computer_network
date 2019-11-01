@@ -1,7 +1,6 @@
 import threading
 
-from code.gbn import GBN
-from code.host import Host
+from code.gbn import GBN, Host
 
 
 def main():
