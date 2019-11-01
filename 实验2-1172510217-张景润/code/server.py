@@ -9,11 +9,11 @@ class Server:
 
     def __init__(self):
         super().__init__()
-        self.window_size = 5  # 窗口尺寸
+        self.window_size = 10  # 窗口尺寸
         self.send_base = 0  # 最小的被发送的分组序号
         self.next_seq = 0  # 当前未被利用的序号
         self.time_count = 0  # 记录当前传输时间
-        self.time_out = 5  # 设置超时时间
+        self.time_out = 4  # 设置超时时间
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(GBN.server_address)  # 绑定套接字的本地IP地址和端口号
         self.data = []  # 缓存发送数据
@@ -21,7 +21,7 @@ class Server:
         self.buf_size = 10
         self.get_data_from_file()
 
-        self.pkt_loss = 0.01  # 丢包率，由发送者处理:即发送发按照丢包率发送分组
+        self.pkt_loss = 0.05  # 丢包率，由发送者处理:即发送发按照丢包率发送分组
 
     # 若仍剩余窗口空间，则构造数据报发送；否则拒绝发送数据
     def send_data(self):
@@ -74,5 +74,6 @@ class Server:
                 if self.time_count > self.time_out:
                     self.handle_time_out()
             if self.next_seq == len(self.data):
+                self.socket.sendto(GBN.make_pkt(0, ''), GBN.client_address)
                 print('服务器数据传输结束')
                 break
