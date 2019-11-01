@@ -48,5 +48,5 @@ def run_sr():
 
 
 if __name__ == '__main__':
-    run_gbn()
-    # run_sr()
+    # run_gbn()
+    run_sr()
