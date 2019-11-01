@@ -24,7 +24,7 @@ class Host:
 
         self.data_buf_size = 1678  # 作为客户端接收数据缓存
         self.exp_seq = 0  # 当前期望收到该序号的数据
-        self.save_path = '../file/config_file.txt'  # 接收数据时，保存数据的地址
+        self.save_path = '../file/save_file.txt'  # 接收数据时，保存数据的地址
         self.write_data_to_file('', mode='w')
 
         self.pkt_loss = 0.1  # 发送数据丢包率
@@ -53,12 +53,6 @@ class Host:
             if random.random() > self.pkt_loss:
                 self.socket.sendto(GBN.make_pkt(i, self.data[i]), self.remote_address)
             print('数据已重发:' + str(i))
-
-    # 处理收到的客户端ACK报文
-    def rcv_pkt(self, data):
-        rcv_num = int(data.decode().split()[0])
-        self.send_base = (rcv_num + 1)  # 收到ACK，更新窗口起点
-        self.time_count = 0  # 重置定时器
 
     def get_data_from_file(self):
         f = open(self.read_path, 'r', encoding='utf-8')
