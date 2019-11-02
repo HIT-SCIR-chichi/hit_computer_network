@@ -8,11 +8,11 @@ from lab_code.main import Host
 class GBN:
 
     def __init__(self, local_address=Host.host_address_1, remote_address=Host.host_address_2):
-        self.window_size = 10  # 窗口尺寸
+        self.window_size = 4  # 窗口尺寸
         self.send_base = 0  # 最小的被发送的分组序号
         self.next_seq = 0  # 当前未被利用的序号
         self.time_count = 0  # 记录当前传输时间
-        self.time_out = 4  # 设置超时时间
+        self.time_out = 5  # 设置超时时间
         self.local_address = local_address  # 设置本地socket地址
         self.remote_address = remote_address  # 设置远程socket地址
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -27,8 +27,8 @@ class GBN:
         self.save_path = '../file/save_file.txt'  # 接收数据时，保存数据的地址
         self.write_data_to_file('', mode='w')
 
-        self.pkt_loss = 0.05  # 发送数据丢包率
-        self.ack_loss = 0.05  # 返回的ack丢包率
+        self.pkt_loss = 0.1  # 发送数据丢包率
+        self.ack_loss = 0  # 返回的ack丢包率
 
     # 若仍剩余窗口空间，则构造数据报发送；否则拒绝发送数据
     def send_data(self):
@@ -42,7 +42,7 @@ class GBN:
             if self.send_base == self.next_seq:
                 self.time_count = 0
             print('服务器:成功发送数据' + str(self.next_seq))
-            self.next_seq += 1
+            self.next_seq = (self.next_seq + 1) % Host.seq_length
         else:  # 窗口中无可用空间
             print('服务器：窗口已满，暂不发送数据')
 
@@ -72,7 +72,7 @@ class GBN:
             if len(readable) > 0:  # 接收ACK数据
                 rcv_ack = self.socket.recvfrom(self.ack_buf_size)[0].decode().split()[0]
                 print('收到客户端ACK:' + rcv_ack)
-                self.send_base = int(rcv_ack) + 1  # 滑动窗口的起始序号
+                self.send_base = (int(rcv_ack) + 1) % Host.seq_length  # 滑动窗口的起始序号
             else:
                 self.time_count += 1
                 if self.time_count > self.time_out:
@@ -101,7 +101,7 @@ class GBN:
                 if int(rcv_seq) == self.exp_seq:
                     print('收到服务器发来的期望序号数据:' + str(rcv_seq))
                     self.write_data_to_file(rcv_data)  # 保存服务器端发送的数据到本地文件中
-                    self.exp_seq += 1  # 期望数据的序号更新
+                    self.exp_seq = (self.exp_seq + 1) % Host.seq_length  # 期望数据的序号更新
                 else:
                     print('客户端：收到数据非期望数据，期望:' + str(self.exp_seq) + '实际:' + str(rcv_seq))
                 if random.random() >= self.ack_loss:

@@ -7,6 +7,7 @@ class Host:
     # 规定发送结束格式：[0 0]
     host_address_1 = ('127.0.0.1', 12340)
     host_address_2 = ('127.0.0.1', 12341)
+    seq_length = 255
 
     # 用于配置主机地址
     @staticmethod
@@ -48,5 +49,5 @@ def run_sr():
 
 
 if __name__ == '__main__':
-    # run_gbn()
-    run_sr()
+    run_gbn()
+    # run_sr()

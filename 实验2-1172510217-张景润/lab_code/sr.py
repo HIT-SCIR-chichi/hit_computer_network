@@ -8,10 +8,10 @@ from lab_code.main import Host
 class SR:
 
     def __init__(self, local_address=Host.host_address_1, remote_address=Host.host_address_2):
-        self.send_window_size = 10  # 窗口尺寸
+        self.send_window_size = 4  # 窗口尺寸
         self.send_base = 0  # 最小的被发送的分组序号
         self.next_seq = 0  # 当前未被利用的序号
-        self.time_out = 3  # 设置超时时间
+        self.time_out = 5  # 设置超时时间
         self.local_address = local_address  # 设置本地socket地址
         self.remote_address = remote_address  # 设置远程socket地址
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -21,12 +21,12 @@ class SR:
         self.ack_buf_size = 10
         self.get_data_from_file()
 
-        self.rcv_window_size = 10  # 接受窗口尺寸
+        self.rcv_window_size = 4  # 接受窗口尺寸
         self.data_buf_size = 1678  # 作为客户端接收数据缓存
         self.save_path = '../file/save_file.txt'  # 接收数据时，保存数据的地址
         self.write_data_to_file('', mode='w')
 
-        self.pkt_loss = 0.3  # 发送数据丢包率
+        self.pkt_loss = 0.1  # 发送数据丢包率
         self.ack_loss = 0  # 返回的ack丢包率
 
         self.time_counts = {}  # 存储窗口中每个发出序号的时间
@@ -47,7 +47,7 @@ class SR:
             self.time_counts[self.next_seq] = 0
             self.ack_seqs[self.next_seq] = False
             print('服务器:发送数据' + str(self.next_seq))
-            self.next_seq += 1
+            self.next_seq = (self.next_seq + 1) % Host.seq_length
         else:  # 窗口中无可用空间
             print('服务器:窗口已满，暂不发送数据')
 
@@ -74,7 +74,7 @@ class SR:
         while self.ack_seqs.get(self.send_base):
             del self.ack_seqs[self.send_base]
             del self.time_counts[self.send_base]
-            self.send_base += 1
+            self.send_base = (self.send_base + 1) % Host.seq_length
             print('服务器:窗口滑动到' + str(self.send_base))
 
     def server_run(self):
@@ -90,12 +90,11 @@ class SR:
                         self.slide_send_window()
                 else:
                     print('服务器:收到无用ACK' + rcv_ack)
-            else:
-                for seq in self.time_counts.keys():  # 每个未接收的分组的时长都加1
-                    if not self.ack_seqs[seq]:
-                        self.time_counts[seq] += 1
-                        if self.time_counts[seq] > self.time_out:
-                            self.handle_time_out(seq)
+            for seq in self.time_counts.keys():  # 每个未接收的分组的时长都加1
+                if not self.ack_seqs[seq]:
+                    self.time_counts[seq] += 1
+                    if self.time_counts[seq] > self.time_out:
+                        self.handle_time_out(seq)
             if self.send_base == len(self.data):
                 self.socket.sendto(Host.make_pkt(0, 0), self.remote_address)
                 print('服务器:数据传输结束')
@@ -133,5 +132,5 @@ class SR:
         while self.rcv_data.get(self.rcv_base) is not None:
             self.write_data_to_file(self.rcv_data.get(self.rcv_base))
             del self.rcv_data[self.rcv_base]  # 清除该缓存
-            self.rcv_base += 1
+            self.rcv_base = (self.rcv_base + 1) % Host.seq_length
             print('客户端:窗口滑动到' + str(self.rcv_base))

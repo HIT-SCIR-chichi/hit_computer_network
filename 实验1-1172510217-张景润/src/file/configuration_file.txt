@@ -4,4 +4,4 @@ user_filter=true
 phishing=true
 web_filter:cs.hit.edu.cn
 user_filter:127.0.0.2
-phishing:jwes.hit.edu.cn today.hit.edu.cn
+phishing:jwes.hit.edu.cn jwc.hit.edu.cn
