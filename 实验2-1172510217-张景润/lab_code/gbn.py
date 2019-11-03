@@ -78,7 +78,7 @@ class GBN:
                     self.handle_time_out()
             if self.send_base == len(self.data):  # 判断数据是否传输结束
                 self.socket.sendto(Host.make_pkt(0, 0), self.remote_address)  # 发送结束报文
-                print('服务器数据传输结束')
+                print('服务器:发送完毕')
                 break
 
     # 保存来自服务器的合适的数据
