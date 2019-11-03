@@ -14,14 +14,12 @@ class Host:
         with open(config_path, 'r', encoding='utf-8') as f:  # 读取配置文件
             line = f.readline()
             while len(line) > 0:
-                if line.startswith('host_address_1'):
-                    Host.host_address_1 = (
-                        line[line.index('=') + 1: line.index(' ')],
-                        int(line[line.index(' ') + 1:len(line) - 1]))
-                elif line.startswith('host_address_2'):
-                    Host.host_address_2 = (
-                        line[line.index('=') + 1: line.index(' ')],
-                        int(line[line.index(' ') + 1:len(line) - 1]))
+                if line.startswith('host_address_1'):  # 配置主机1的地址
+                    Host.host_address_1 = (line[line.index('=') + 1: line.index(' ')],
+                                           int(line[line.index(' ') + 1:len(line) - 1]))
+                elif line.startswith('host_address_2'):  # 配置主机2的地址
+                    Host.host_address_2 = (line[line.index('=') + 1: line.index(' ')],
+                                           int(line[line.index(' ') + 1:len(line) - 1]))
                 line = f.readline()
 
     # 产生一个发送数据包或者确认数据包，数据包格式遵循本文件的规约

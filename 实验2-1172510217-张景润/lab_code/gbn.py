@@ -9,6 +9,7 @@ class GBN:
 
     def __init__(self, local_address=Host.host_address_1, remote_address=Host.host_address_2):
         self.window_size = 4  # 窗口尺寸
+        self.send_base = 0  # 最小的被发送的分组序号
         self.next_seq = 0  # 当前未被利用的序号
         self.time_count = 0  # 记录当前传输时间
         self.time_out = 5  # 设置超时时间
@@ -91,16 +92,16 @@ class GBN:
             readable = select.select([self.socket], [], [], 1)[0]  # 非阻塞接收
             if len(readable) > 0:  # 接收到数据
                 rcv_data = self.socket.recvfrom(self.data_buf_size)[0].decode()
-                rcv_seq = rcv_data.split()[0]
-                rcv_data = rcv_data.replace(rcv_seq + ' ', '')
+                rcv_seq = rcv_data.split()[0]  # 按照格式规约获取数据序号
+                rcv_data = rcv_data.replace(rcv_seq + ' ', '')  # 按照格式规约获取数据
                 if rcv_seq == '0' and rcv_data == '0':  # 接收到结束包
                     print('客户端:传输数据结束')
                     break
-                if int(rcv_seq) == self.exp_seq:
+                if int(rcv_seq) == self.exp_seq:  # 接收到按序数据包
                     print('客户端:收到期望序号数据:' + str(rcv_seq))
                     self.write_data_to_file(rcv_data)  # 保存服务器端发送的数据到本地文件中
                     self.exp_seq = self.exp_seq + 1  # 期望数据的序号更新
                 else:
                     print('客户端:收到非期望数据，期望:' + str(self.exp_seq) + '实际:' + str(rcv_seq))
-                if random.random() >= self.ack_loss:
+                if random.random() >= self.ack_loss:  # 随机丢包发送数据
                     self.socket.sendto(Host.make_pkt(self.exp_seq - 1, 0), self.remote_address)
