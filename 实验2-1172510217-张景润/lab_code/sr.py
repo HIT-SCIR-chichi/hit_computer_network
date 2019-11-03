@@ -47,7 +47,7 @@ class SR:
             self.time_counts[self.next_seq] = 0
             self.ack_seqs[self.next_seq] = False
             print('服务器:发送数据' + str(self.next_seq))
-            self.next_seq = (self.next_seq + 1) % Host.seq_length
+            self.next_seq = self.next_seq + 1
         else:  # 窗口中无可用空间
             print('服务器:窗口已满，暂不发送数据')
 
@@ -74,7 +74,7 @@ class SR:
         while self.ack_seqs.get(self.send_base):
             del self.ack_seqs[self.send_base]
             del self.time_counts[self.send_base]
-            self.send_base = (self.send_base + 1) % Host.seq_length
+            self.send_base = self.send_base + 1
             print('服务器:窗口滑动到' + str(self.send_base))
 
     def server_run(self):
@@ -132,5 +132,5 @@ class SR:
         while self.rcv_data.get(self.rcv_base) is not None:
             self.write_data_to_file(self.rcv_data.get(self.rcv_base))
             del self.rcv_data[self.rcv_base]  # 清除该缓存
-            self.rcv_base = (self.rcv_base + 1) % Host.seq_length
+            self.rcv_base = self.rcv_base + 1
             print('客户端:窗口滑动到' + str(self.rcv_base))
