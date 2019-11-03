@@ -99,10 +99,10 @@ class GBN:
                     print('客户端:传输数据结束')
                     break
                 if int(rcv_seq) == self.exp_seq:
-                    print('收到服务器发来的期望序号数据:' + str(rcv_seq))
+                    print('客户端:收到期望序号数据:' + str(rcv_seq))
                     self.write_data_to_file(rcv_data)  # 保存服务器端发送的数据到本地文件中
                     self.exp_seq = (self.exp_seq + 1) % Host.seq_length  # 期望数据的序号更新
                 else:
-                    print('客户端：收到数据非期望数据，期望:' + str(self.exp_seq) + '实际:' + str(rcv_seq))
+                    print('客户端:收到非期望数据，期望:' + str(self.exp_seq) + '实际:' + str(rcv_seq))
                 if random.random() >= self.ack_loss:
                     self.socket.sendto(Host.make_pkt(self.exp_seq - 1, 0), self.remote_address)
